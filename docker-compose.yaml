@@ -1,0 +1,94 @@
+services:
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    # healthcheck:
+    #   test: rabbitmq-diagnostics check_port_connectivity
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 1
+
+  mysql:
+    image: "mysql:5.7"
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: celery_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    # healthcheck:
+    #   test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+    #   timeout: 20s
+    #   retries: 10
+  fastapi:
+    build: ./backend/app
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Asia/Singapore
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=db+mysql+mysqlconnector://user:password@mysql:3306/celery_db
+    depends_on:
+      - rabbitmq
+      - mysql
+    # depends_on:
+    #   rabbitmq:
+    #     condition: service_healthy
+    #   mysql:
+    #     condition: service_healthy
+
+  worker1a:
+    build: ./backend/workers/worker1
+    image: celery-multiple-worker1
+    container_name: celery_worker1a
+    environment:
+      - TZ=Asia/Singapore
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=db+mysql+mysqlconnector://user:password@mysql:3306/celery_db
+    depends_on:
+      - rabbitmq
+      - mysql
+    # depends_on:
+    #   rabbitmq:
+    #     condition: service_healthy
+    #   mysql:
+    #     condition: service_healthy
+
+  worker1b:
+    build: ./backend/workers/worker1
+    image: celery-multiple-worker1
+    container_name: celery_worker1b
+    environment:
+      - TZ=Asia/Singapore
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=db+mysql+mysqlconnector://user:password@mysql:3306/celery_db
+    depends_on:
+      - rabbitmq
+      - mysql
+    # depends_on:
+    #   rabbitmq:
+    #     condition: service_healthy
+    #   mysql:
+    #     condition: service_healthy
+
+  worker2:
+    build: ./backend/workers/worker2
+    container_name: celery_worker2
+    environment:
+      - TZ=Asia/Singapore
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=db+mysql+mysqlconnector://user:password@mysql:3306/celery_db
+    depends_on:
+      - rabbitmq
+      - mysql
+    # depends_on:
+    #   rabbitmq:
+    #     condition: service_healthy
+    #   mysql:
+    #     condition: service_healthy

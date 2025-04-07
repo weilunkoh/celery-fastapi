@@ -1,0 +1,4 @@
+fastapi[standard]==0.115.12
+celery==5.5.0
+SQLAlchemy==2.0.40
+mysql-connector-python==9.2.0
